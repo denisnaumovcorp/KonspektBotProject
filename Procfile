@@ -1,1 +1,1 @@
-bot: python3 KonspektBot.py
+worker: python3 KonspektBot.py
