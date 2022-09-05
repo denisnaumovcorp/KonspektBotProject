@@ -16,7 +16,7 @@ choice_reg = "(^Конспекты$|^Дз$)"
 days_reg = "(^\d{1}$|^\d{2}$)"
 action_reg = "(^Загрузить конспекты$|^Посмотреть конспекты$)"
 
-things_reply_keyboard = [["Конспекты"], ["Выйти"]]
+things_reply_keyboard = [["Конспекты"]]
 years_reply_keyboard = [["2022", "2023", "2024"], ["Выйти"]]
 months_reply_keyboard = [["Сентябрь", "Октябрь", "Ноябрь"], ["Декабрь", "Январь", "Февраль"], ["Март", "Апрель", "Май"], ["Июнь", "Июль", "Август"], ["Выйти"]]
 subjects_reply_keyboard = [["Алгебра", "Геометрия", "Мат. анализ"], ["Русский язык", "Литература", "Английский язык"], ["Биология", "ОБЖ", "История"], ["Физика", "Химия", "Физ. лаба"], ["Обществознание"], ["Выйти"]]
@@ -42,7 +42,7 @@ def main() -> None:
                                                         MONTH: [MessageHandler(filters.Regex(years_reg), choose_a_month)],
                                                         DAY: [MessageHandler(filters.Regex(months_reg), choose_a_day)],
                                                         GET_PHOTOS: [MessageHandler(filters.Regex(days_reg), partial(get_or_see_photos, bot = bot))],
-                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/'), partial(upload_photos, bot=bot))]}, fallbacks=[MessageHandler(filters.Regex("^Выйти"), start)])
+                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/') | filters.Document.MimeType('application/pdf') | filters.Document.MimeType('application/docx'), partial(upload_photos, bot=bot))]}, fallbacks=[MessageHandler(filters.Regex("^Выйти"), start)])
     application.add_handler(conv_handler)
 
 
@@ -104,7 +104,7 @@ async def get_or_see_photos(update, context, bot) -> int:
             await update.message.reply_text(text="Вот все фото, которые мне удалось найти:", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
             for i in file_list:
                 if i.file != None:
-                    await bot.send_photo(update.message.chat.id, i.file)
+                    await bot.send_document(update.message.chat.id, i.file)
 
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
