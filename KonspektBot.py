@@ -1,6 +1,6 @@
 from calendar import monthrange
-from telegram import Update, ForceReply, Message, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, CallbackContext, ConversationHandler
+from telegram import ReplyKeyboardMarkup, Bot
+from telegram.ext import Application, CommandHandler, MessageHandler, ConversationHandler
 import telegram.ext.filters as filters
 from functools import partial
 import yadisk
@@ -92,15 +92,19 @@ async def choose_a_day(update, context) -> int:
     return GET_PHOTOS
 async def get_or_see_photos(update, context, bot) -> int:
     context.user_data["day"] = update.message.text
+    path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
     if context.user_data["action"] == "Загрузить конспекты":
         await update.message.reply_text("Отправте в чат изображения, которые вы хотите добавить", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
         return UPLOAD_PHOTOS
     if context.user_data["action"] == "Посмотреть конспекты":
-        path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
         file_list = list(disk.listdir(path))
-        for i in file_list:
-            if i.file != None:
-                await bot.send_photo(update.message.chat.id, i.file)
+        if not file_list:
+            await update.message.reply_text("Извините, на эту дату конспекты не выложенны, попросите выложить",reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]],one_time_keyboard=False, resize_keyboard=True))
+        else:
+            await update.message.reply_text(text="Вот все фото, которые мне удалось найти", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
+            for i in file_list:
+                if i.file != None:
+                    await bot.send_photo(update.message.chat.id, i.file)
 
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
@@ -114,10 +118,5 @@ async def upload_photos(update, context, bot) -> int:
             file = await bot.get_file(photo_file.file_id)
             disk.upload_url(file.file_path, path)
 
-#async def see_photos(update, context, bot) -> int:
-    #file_list = list(disk.listdir('conspectbot/'))
-        #for i in file_list:
-                #if i.file != None:
-                    #await bot.send_photo(update.message.chat.id, i.file)
 
 main()
