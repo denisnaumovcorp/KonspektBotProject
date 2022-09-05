@@ -5,7 +5,6 @@ import telegram.ext.filters as filters
 from functools import partial
 import yadisk
 
-print('Hello world!')
 disk = yadisk.YaDisk(token="y0_AgAAAABALxVvAAhfcwAAAADNm_GdxJ2gzsdISuSJfntSvJ0Kaydd99w")
 print(disk.check_token())
 years_reg = "(^2022$|^2023$|^2024$)"
@@ -16,10 +15,15 @@ choice_reg = "(^Конспекты$|^Дз$)"
 days_reg = "(^\d{1}$|^\d{2}$)"
 action_reg = "(^Загрузить конспекты$|^Посмотреть конспекты$)"
 
+subjects = ["Алгебра", "Геометрия", "Русский язык", "Литература", "Биология", "Английский язык", "История","Мат. анализ", "ОБЖ", "Обществознание", "Физ. лаба", "Физика", "Химия"]
+months_dir = {'Январь': 1, 'Февраль': 2, 'Март': 3, 'Апрель': 4, 'Май': 5, 'Июнь': 6, 'Июль': 7, 'Август': 8,'Сентябрь': 9, 'Октябрь': 10, 'Ноябрь': 11, 'Декабрь': 12}
+years = ["2022", "2023", "2024"]
+months = ["Сентябрь", "Октябрь", "Ноябрь", "Декабрь", "Январь", "Февраль","Март", "Апрель", "Май","Июнь", "Июль", "Август"]
+
 things_reply_keyboard = [["Конспекты", "Дз"]]
 years_reply_keyboard = [["2022", "2023", "2024"]]
-months_reply_keyboard = [["Сентябрь", "Октябрь", "Ноябрь"],["Декабрь", "Январь", "Февраль"],["Март", "Апрель", "Май"],["Июнь", "Июль", "Август"]]
-subjects_reply_keyboard = [["Алгебра", "Геометрия", "Мат. анализ"],["Русский язык", "Литература", "Английский язык"],["Биология", "ОБЖ", "История"],["Физика", "Химия", "Физ. лаба"],["Обществознание"]]
+months_reply_keyboard = [["Сентябрь", "Октябрь", "Ноябрь"], ["Декабрь", "Январь", "Февраль"], ["Март", "Апрель", "Май"], ["Июнь", "Июль", "Август"]]
+subjects_reply_keyboard = [["Алгебра", "Геометрия", "Мат. анализ"], ["Русский язык", "Литература", "Английский язык"], ["Биология", "ОБЖ", "История"], ["Физика", "Химия", "Физ. лаба"], ["Обществознание"]]
 
 ACTION, SUBJECT, YEAR, MONTH, DAY, UPLOAD_PHOTOS, GET_PHOTOS = range(7)
 
@@ -28,6 +32,15 @@ year = ''
 month = ''
 day = ''
 state = 0
+
+for j in subjects:
+    for i in years:
+        disk.mkdir('conspectbot/' + j + '/' + i)
+        for ii in months:
+            disk.mkdir('conspectbot/' + j + '/' + i + '/' + ii)
+            for iii in range(1, monthrange(int(i), months_dir[ii])[1]):
+                disk.mkdir('conspectbot/' + j + '/' + i + '/' + ii + '/' + str(iii))
+
 def main() -> None:
     application = Application.builder().token("5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0").build()
 
@@ -94,26 +107,10 @@ async def get_or_see_photos(update, context, bot) -> int:
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
     if update.message.document:
-        if disk.exists(path):
-            path += '/' + update.message.document.file_name
-            file = await bot.get_file(update.message.document.file_id)
-            disk.upload_url(file.file_path, path)
-        else:
-            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"])
-            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"])
-            disk.mkdir(path)
             path += '/' + update.message.document.file_name
             file = await bot.get_file(update.message.document.file_id)
             disk.upload_url(file.file_path, path)
     elif update.message.photo:
-        if disk.exists(path):
-            path += '/' + update.message.photo.file_unique_id
-            file = await bot.get_file(update.message.photo.file_id)
-            disk.upload_url(file.file_path, path)
-        else:
-            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"])
-            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"])
-            disk.mkdir(path)
             path += '/' + update.message.photo.file_unique_id
             file = await bot.get_file(update.message.photo.file_id)
             disk.upload_url(file.file_path, path)
