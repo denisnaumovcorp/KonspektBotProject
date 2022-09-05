@@ -101,7 +101,7 @@ async def get_or_see_photos(update, context, bot) -> int:
         if not file_list:
             await update.message.reply_text("Извините, на эту дату конспекты не выложенны, попросите выложить",reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]],one_time_keyboard=False, resize_keyboard=True))
         else:
-            await update.message.reply_text(text="Вот все фото, которые мне удалось найти", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
+            await update.message.reply_text(text="Вот все фото, которые мне удалось найти:", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
             for i in file_list:
                 if i.file != None:
                     await bot.send_photo(update.message.chat.id, i.file)
