@@ -41,7 +41,7 @@ def main() -> None:
                                                         MONTH: [MessageHandler(filters.Regex(years_reg), choose_a_month)],
                                                         DAY: [MessageHandler(filters.Regex(months_reg), choose_a_day)],
                                                         GET_PHOTOS: [MessageHandler(filters.Regex(days_reg), partial(get_or_see_photos, bot = bot))],
-                                                        UPLOAD_PHOTOS: [MessageHandler(filters.Document.ALL & filters.PhotoSize, partial(upload_photos, bot=bot))],},fallbacks=[MessageHandler(filters.Regex("^Готов$"), start)],)
+                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/'), partial(upload_photos, bot=bot))],},fallbacks=[MessageHandler(filters.Regex("^Готов$"), start)],)
     application.add_handler(conv_handler)
 
 
@@ -76,7 +76,7 @@ async def choose_a_day(update, context) -> int:
     reply_keyboard = []
     temp = []
     for i in range(1, amount_of_days + 1):
-        temp.append(i)
+        temp.append(str(i))
         if i % 5 == 0:
             reply_keyboard.append(temp)
             temp = []
@@ -92,15 +92,40 @@ async def get_or_see_photos(update, context, bot) -> int:
         return UPLOAD_PHOTOS
 
 async def upload_photos(update, context, bot) -> int:
-    print(update.message.photo)
+    path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
+    if update.message.document:
+        if disk.exists(path):
+            path += '/' + update.message.document.file_name
+            file = await bot.get_file(update.message.document.file_id)
+            disk.upload_url(file.file_path, path)
+        else:
+            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"])
+            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"])
+            disk.mkdir(path)
+            path += '/' + update.message.document.file_name
+            file = await bot.get_file(update.message.document.file_id)
+            disk.upload_url(file.file_path, path)
+    elif update.message.photo:
+        if disk.exists(path):
+            path += '/' + update.message.photo.file_unique_id
+            file = await bot.get_file(update.message.photo.file_id)
+            disk.upload_url(file.file_path, path)
+        else:
+            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"])
+            disk.mkdir('conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"])
+            disk.mkdir(path)
+            path += '/' + update.message.photo.file_unique_id
+            file = await bot.get_file(update.message.photo.file_id)
+            disk.upload_url(file.file_path, path)
 
 #file_list = list(disk.listdir('conspectbot/'))
     #for i in file_list:
             #if i.file != None:
                 #await bot.send_photo(update.message.chat.id, i.file)
 async def upload(update, context, bot):
-    path = 'conspectbot/' + year + '/' + month + '/' + str(day) + '/' + update.message.document.file_name
-    file = await bot.get_file(update.message.document.file_id)
+    if (update.message.photo.file_id):
+        path = 'conspectbot/' + year + '/' + month + '/' + str(day) + '/' + update.message.photo.file_name
+    file = await bot.get_file(update.message.pho)
     print(dir(file))
     disk.upload_url(file.file_path, 'conspectbot/123')
 
