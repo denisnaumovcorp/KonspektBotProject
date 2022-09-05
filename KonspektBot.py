@@ -9,37 +9,24 @@ disk = yadisk.YaDisk(token="y0_AgAAAABALxVvAAhfcwAAAADNm_GdxJ2gzsdISuSJfntSvJ0Ka
 print(disk.check_token())
 years_reg = "(^2022$|^2023$|^2024$)"
 months_reg = "(^Сентябрь$|^Октябрь$|^Ноябрь$|^Декабрь$|^Январь$|^Февраль$|^Март$|^Апрель$|^Май$|^Июнь$|^Июль$|^Август$)"
-months_dir = {'Январь': 1, 'Февраль': 2, 'Март': 3, 'Апрель': 4, 'Май': 5, 'Июнь': 6, 'Июль': 7, 'Август': 8,'Сентябрь': 9, 'Октябрь': 10, 'Ноябрь': 11, 'Декабрь': 12}
+months_dir = {'Январь': 1, 'Февраль': 2, 'Март': 3, 'Апрель': 4, 'Май': 5, 'Июнь': 6, 'Июль': 7, 'Август': 8, 'Сентябрь': 9, 'Октябрь': 10, 'Ноябрь': 11, 'Декабрь': 12}
 subjects_reg = "(^Алгебра$|^Геометрия$|^Мат. анализ$|^Русский язык$|^Литература$|^Английский язык$|^Биология$|^ОБЖ$|^История$|^Физика$|^Химия$|^Физ. лаба$|^Обществознание$)"
 choice_reg = "(^Конспекты$|^Дз$)"
 days_reg = "(^\d{1}$|^\d{2}$)"
 action_reg = "(^Загрузить конспекты$|^Посмотреть конспекты$)"
-
-subjects = ["Алгебра", "Геометрия", "Русский язык", "Литература", "Биология", "Английский язык", "История","Мат. анализ", "ОБЖ", "Обществознание", "Физ. лаба", "Физика", "Химия"]
-months_dir = {'Январь': 1, 'Февраль': 2, 'Март': 3, 'Апрель': 4, 'Май': 5, 'Июнь': 6, 'Июль': 7, 'Август': 8,'Сентябрь': 9, 'Октябрь': 10, 'Ноябрь': 11, 'Декабрь': 12}
-years = ["2022", "2023", "2024"]
-months = ["Сентябрь", "Октябрь", "Ноябрь", "Декабрь", "Январь", "Февраль","Март", "Апрель", "Май","Июнь", "Июль", "Август"]
 
 things_reply_keyboard = [["Конспекты", "Дз"]]
 years_reply_keyboard = [["2022", "2023", "2024"]]
 months_reply_keyboard = [["Сентябрь", "Октябрь", "Ноябрь"], ["Декабрь", "Январь", "Февраль"], ["Март", "Апрель", "Май"], ["Июнь", "Июль", "Август"]]
 subjects_reply_keyboard = [["Алгебра", "Геометрия", "Мат. анализ"], ["Русский язык", "Литература", "Английский язык"], ["Биология", "ОБЖ", "История"], ["Физика", "Химия", "Физ. лаба"], ["Обществознание"]]
 
-ACTION, SUBJECT, YEAR, MONTH, DAY, UPLOAD_PHOTOS, GET_PHOTOS = range(7)
+ACTION, SUBJECT, YEAR, MONTH, DAY, UPLOAD_PHOTOS, GET_PHOTOS, SEE_PHOTOS = range(8)
 
 subject = ''
 year = ''
 month = ''
 day = ''
 state = 0
-
-for j in subjects:
-    for i in years:
-        disk.mkdir('conspectbot/' + j + '/' + i)
-        for ii in months:
-            disk.mkdir('conspectbot/' + j + '/' + i + '/' + ii)
-            for iii in range(1, monthrange(int(i), months_dir[ii])[1]):
-                disk.mkdir('conspectbot/' + j + '/' + i + '/' + ii + '/' + str(iii))
 
 def main() -> None:
     application = Application.builder().token("5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0").build()
@@ -54,7 +41,7 @@ def main() -> None:
                                                         MONTH: [MessageHandler(filters.Regex(years_reg), choose_a_month)],
                                                         DAY: [MessageHandler(filters.Regex(months_reg), choose_a_day)],
                                                         GET_PHOTOS: [MessageHandler(filters.Regex(days_reg), partial(get_or_see_photos, bot = bot))],
-                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/'), partial(upload_photos, bot=bot))],},fallbacks=[MessageHandler(filters.Regex("^Готов$"), start)],)
+                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/'), partial(upload_photos, bot=bot))]}, fallbacks=[MessageHandler(filters.Regex("^Готов$"), start)])
     application.add_handler(conv_handler)
 
 
@@ -100,9 +87,15 @@ async def choose_a_day(update, context) -> int:
     return GET_PHOTOS
 async def get_or_see_photos(update, context, bot) -> int:
     context.user_data["day"] = update.message.text
-    if  context.user_data["action"] == "Загрузить конспекты":
+    if context.user_data["action"] == "Загрузить конспекты":
         await update.message.reply_text("Отправте в чат изображения, которые вы хотите добавить")
         return UPLOAD_PHOTOS
+    if context.user_data["action"] == "Посмотреть конспекты":
+        path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
+        file_list = list(disk.listdir(path))
+        for i in file_list:
+            if i.file != None:
+                await bot.send_photo(update.message.chat.id, i.file)
 
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
@@ -111,19 +104,15 @@ async def upload_photos(update, context, bot) -> int:
             file = await bot.get_file(update.message.document.file_id)
             disk.upload_url(file.file_path, path)
     elif update.message.photo:
-            path += '/' + update.message.photo.file_unique_id
-            file = await bot.get_file(update.message.photo.file_id)
+            photo_file = max(update.message.photo)
+            path += '/' + photo_file.file_unique_id
+            file = await bot.get_file(photo_file.file_id)
             disk.upload_url(file.file_path, path)
 
-#file_list = list(disk.listdir('conspectbot/'))
-    #for i in file_list:
-            #if i.file != None:
-                #await bot.send_photo(update.message.chat.id, i.file)
-async def upload(update, context, bot):
-    if (update.message.photo.file_id):
-        path = 'conspectbot/' + year + '/' + month + '/' + str(day) + '/' + update.message.photo.file_name
-    file = await bot.get_file(update.message.pho)
-    print(dir(file))
-    disk.upload_url(file.file_path, 'conspectbot/123')
+#async def see_photos(update, context, bot) -> int:
+    #file_list = list(disk.listdir('conspectbot/'))
+        #for i in file_list:
+                #if i.file != None:
+                    #await bot.send_photo(update.message.chat.id, i.file)
 
 main()
