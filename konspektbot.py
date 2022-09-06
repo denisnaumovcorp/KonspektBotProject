@@ -30,6 +30,7 @@ month = ''
 day = ''
 state = 0
 
+
 def main() -> None:
     application = Application.builder().token("5525504235:AAElnC-jc2lYK1W2sg0UddRXvmpfwXbsxkc").build()
 
