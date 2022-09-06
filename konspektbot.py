@@ -6,7 +6,6 @@ from functools import partial
 import yadisk
 import copy
 
-
 disk = yadisk.YaDisk(token="y0_AgAAAABALxVvAAhfcwAAAADNm_GdxJ2gzsdISuSJfntSvJ0Kaydd99w")
 print(disk.check_token())
 years_reg = "(^2022$|^2023$|^2024$)"
@@ -17,7 +16,7 @@ choice_reg = "(^Конспекты$|^Дз$)"
 days_reg = "(^\d{1}$|^\d{2}$)"
 action_reg = "(^Загрузить конспекты$|^Посмотреть конспекты$)"
 
-things_reply_keyboard = [["Конспекты"]]
+things_reply_keyboard = [["Конспекты"], ["Выйти"]]
 years_reply_keyboard = [["2022", "2023", "2024"], ["Выйти"]]
 months_reply_keyboard = [["Сентябрь", "Октябрь", "Ноябрь"], ["Декабрь", "Январь", "Февраль"], ["Март", "Апрель", "Май"], ["Июнь", "Июль", "Август"], ["Выйти"]]
 subjects_reply_keyboard = [["Алгебра", "Геометрия", "Мат. анализ"], ["Русский язык", "Литература", "Английский язык"], ["Биология", "ОБЖ", "История"], ["Физика", "Химия", "Физ. лаба"], ["Обществознание"], ["Выйти"]]
@@ -30,11 +29,10 @@ month = ''
 day = ''
 state = 0
 
-
 def main() -> None:
-    application = Application.builder().token("5525504235:AAElnC-jc2lYK1W2sg0UddRXvmpfwXbsxkc").build()
+    application = Application.builder().token("5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0").build()
 
-    bot = Bot('5525504235:AAElnC-jc2lYK1W2sg0UddRXvmpfwXbsxkc')
+    bot = Bot('5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0')
 
     #application.add_handler(MessageHandler(filters.ATTACHMENT, partial(upload, bot=bot)))
     conv_handler = ConversationHandler(entry_points=[CommandHandler("start", start)],
@@ -43,9 +41,8 @@ def main() -> None:
                                                         YEAR: [MessageHandler(filters.Regex(subjects_reg), choose_a_year)],
                                                         MONTH: [MessageHandler(filters.Regex(years_reg), choose_a_month)],
                                                         DAY: [MessageHandler(filters.Regex(months_reg), choose_a_day)],
-                                                        GET_PHOTOS: [MessageHandler(filters.Regex(days_reg), partial(get_or_see_photos, bot=bot))],
-                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/') | filters.Document.MimeType('application/pdf') | filters.Document.MimeType('application/docx'), partial(upload_photos, bot=bot))],
-                                                        SEE_PHOTOS: [MessageHandler(filters.ALL, partial(see_photos, bot=bot))]}, fallbacks=[MessageHandler(filters.Regex("^Выйти"), start)])
+                                                        GET_PHOTOS: [MessageHandler(filters.Regex(days_reg), partial(get_or_see_photos, bot = bot))],
+                                                        UPLOAD_PHOTOS: [MessageHandler(filters.PHOTO | filters.Document.Category('image/'), partial(upload_photos, bot=bot))]}, fallbacks=[MessageHandler(filters.Regex("^Выйти"), start)])
     application.add_handler(conv_handler)
 
 
@@ -57,7 +54,6 @@ async def start(update, context) -> int:
         del context.user_data[str(i)]
     await update.message.reply_text("Приветствую! Выберите, пожалуйста, то, что Вам нужно", reply_markup=ReplyKeyboardMarkup(keyboard=things_reply_keyboard, one_time_keyboard=False, resize_keyboard=True))
     return ACTION
-
 async def choose_an_action(update, context) -> int:
     context.user_data["choice"] = update.message.text
     await update.message.reply_text("Что вы хотите сделать?", reply_markup=ReplyKeyboardMarkup(keyboard=[["Загрузить конспекты", "Посмотреть конспекты"], ["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
@@ -94,7 +90,6 @@ async def choose_a_day(update, context) -> int:
     reply_keyboard.append(["Выйти"])
     await update.message.reply_text("Выберите день: ", reply_markup=ReplyKeyboardMarkup(keyboard=reply_keyboard, one_time_keyboard=False, resize_keyboard=True))
     return GET_PHOTOS
-
 async def get_or_see_photos(update, context, bot) -> int:
     context.user_data["day"] = update.message.text
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
@@ -107,7 +102,9 @@ async def get_or_see_photos(update, context, bot) -> int:
             await update.message.reply_text("Извините, на эту дату конспекты не выложенны, попросите выложить",reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]],one_time_keyboard=False, resize_keyboard=True))
         else:
             await update.message.reply_text(text="Вот все фото, которые мне удалось найти:", reply_markup=ReplyKeyboardMarkup(keyboard=[["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
-            return SEE_PHOTOS
+            for i in file_list:
+                if i.file != None:
+                    await bot.send_photo(update.message.chat.id, i.file)
 
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
@@ -116,21 +113,10 @@ async def upload_photos(update, context, bot) -> int:
             file = await bot.get_file(update.message.document.file_id)
             disk.upload_url(file.file_path, path)
     elif update.message.photo:
-            photo_file = max(update.message.photo)
+            photo_file = update.message.photo[len(update.message.photo)-1]
             path += '/' + photo_file.file_unique_id
             file = await bot.get_file(photo_file.file_id)
             disk.upload_url(file.file_path, path)
 
-async def see_photos(update, context, bot) -> int:
-    context.user_data['i'] = 0
-    print(context.user_data['i'])
-    path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
-    file_list = list(disk.listdir(path))
-    if context.user_data['i'] != len(file_list)-1:
-        bot.send_document(update.message.chat.id, file_list[context.user_data['i']])
-        context.user_data['i'] +=1
-        return SEE_PHOTOS
-    else:
-        return ACTION
 
 main()
