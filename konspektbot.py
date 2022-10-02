@@ -53,7 +53,6 @@ async def start(update, context) -> int:
         del context.user_data[str(i)]
     context.user_data["step"] = 0
     context.user_data["files_list"] = list(disk.get_files())
-    print()
     await update.message.reply_text("Приветствую! Выберите, пожалуйста, то, что Вам нужно", reply_markup=ReplyKeyboardMarkup(keyboard=things_reply_keyboard, one_time_keyboard=False, resize_keyboard=True))
     return ACTION
 
