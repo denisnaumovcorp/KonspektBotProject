@@ -6,7 +6,6 @@ from functools import partial
 import yadisk
 import copy
 
-
 disk = yadisk.YaDisk(token="y0_AgAAAABALxVvAAhfcwAAAADNm_GdxJ2gzsdISuSJfntSvJ0Kaydd99w")
 print(disk.check_token())
 years_reg = "(^2022$|^2023$|^2024$)"
