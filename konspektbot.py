@@ -29,9 +29,13 @@ year = ''
 month = ''
 day = ''
 state = 0
+
+#TestKonspektBotToken = 5525504235:AAElnC-jc2lYK1W2sg0UddRXvmpfwXbsxkc
+#MisterKonspektBot = 5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0
 def main() -> None:
-    application = Application.builder().token("5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0").build()
-    bot = Bot('5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0')
+    bot_token = "5769101237:AAFeY_vVY9teDwm3VWqj9hWk1lz8rPiqAQ0"
+    application = Application.builder().token(bot_token).build()
+    bot = Bot(bot_token)
     print(len(application.user_data[0]))
     #application.add_handler(MessageHandler(filters.ATTACHMENT, partial(upload, bot=bot)))
     conv_handler = ConversationHandler(entry_points=[CommandHandler("start", start), MessageHandler(filters.ALL, start)],
@@ -167,13 +171,17 @@ async def choose_a_day(update, context) -> int:
 async def get_or_see_photos(update, context, bot) -> int:
     context.user_data["step"]+=1
     file_list = []
+    temp_list =[]
     context.user_data["day"] = update.message.text
     context.user_data["path"] = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
     file_dict_list = list(disk.listdir(context.user_data["path"]))
     for i in file_dict_list:
         if (i['file']):
-            file_list.append(InputMediaDocument(i['file']));
-
+            temp_list.append(InputMediaDocument(i['file']))
+        if(len(temp_list) == 10):
+            file_list.append(temp_list)
+            temp_list = []
+    file_list.append(temp_list)
     if context.user_data["action"] == "Загрузить конспекты":
         await update.message.reply_text("Отправте в чат изображения, которые вы хотите добавить", reply_markup=ReplyKeyboardMarkup(keyboard=[["Назад"],["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
         return UPLOAD_PHOTOS
@@ -182,7 +190,8 @@ async def get_or_see_photos(update, context, bot) -> int:
             await update.message.reply_text("Извините, на эту дату конспекты не выложенны, попросите выложить",reply_markup=ReplyKeyboardMarkup(keyboard=[["Назад"],["Выйти"]],one_time_keyboard=False, resize_keyboard=True))
         else:
             await update.message.reply_text(text="Вот все фото, которые мне удалось найти:", reply_markup=ReplyKeyboardMarkup(keyboard=[["Назад"],["Выйти"]], one_time_keyboard=False, resize_keyboard=True))
-            await bot.send_media_group(update.message.chat.id, file_list)
+            for i in file_list:
+                await bot.send_media_group(update.message.chat.id, i)
 async def upload_photos(update, context, bot) -> int:
     path = 'conspectbot/' + context.user_data["subject"] + '/' + context.user_data["year"] + '/' + context.user_data["month"] + '/' + context.user_data["day"]
     if update.message.document:
@@ -190,7 +199,7 @@ async def upload_photos(update, context, bot) -> int:
             file = await bot.get_file(update.message.document.file_id)
             disk.upload_url(file.file_path, path)
     elif update.message.photo:
-            photo_file = max(update.message.photo)
+            photo_file = update.message.photo[len(update.message.photo)-1]
             path += '/' + photo_file.file_unique_id
             file = await bot.get_file(photo_file.file_id)
             disk.upload_url(file.file_path, path)
