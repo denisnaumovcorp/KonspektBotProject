@@ -1,2 +1,3 @@
 yadisk==1.2.16
 python-telegram-bot==v20.0a4
+telegram~=0.0.1
